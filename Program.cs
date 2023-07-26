@@ -2,7 +2,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MinimalChatAppApi.Data;
+using MinimalChatAppApi.Interfaces;
 using MinimalChatAppApi.Middlewares;
+using MinimalChatAppApi.Models;
+using MinimalChatAppApi.Repositories;
+using MinimalChatAppApi.Services;
 using System.Text;
 
 namespace MinimalChatAppApi
@@ -16,6 +20,7 @@ namespace MinimalChatAppApi
             // Add services to the container.
 
             builder.Services.AddControllers();
+         
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -47,6 +52,12 @@ namespace MinimalChatAppApi
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Token"]))
                 };
             });
+
+            builder.Services.AddScoped<IRepository<Message>, Repository<Message>>();
+            builder.Services.AddScoped<IRepository<User>, Repository<User>>();
+            builder.Services.AddScoped<IMessageService, MessageService>();
+
+            builder.Services.AddHttpContextAccessor();
 
             var app = builder.Build();
 
