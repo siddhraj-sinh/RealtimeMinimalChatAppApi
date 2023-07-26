@@ -22,7 +22,7 @@ namespace MinimalChatAppApi.Services
         }
 
 
-        public async Task<ActionResult<IEnumerable<UserProfileDto>>> GetUsersAsync()
+        public async Task<IEnumerable<UserProfileDto>> GetUsersAsync()
         {
             var currentUserId = GetCurrentUserId();
 
@@ -42,7 +42,7 @@ namespace MinimalChatAppApi.Services
             return responseDto;
         }
 
-        public async Task<ActionResult<LoginResponseDto>> LoginAsync(LoginRequestDto loginDto)
+        public async Task<LoginResponseDto> LoginAsync(LoginRequestDto loginDto)
         {
             if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
             {
@@ -72,7 +72,7 @@ namespace MinimalChatAppApi.Services
             return responseDto;
         }
 
-        public async Task<ActionResult<RegisterResponseDto>> RegisterAsync(RegisterRequestDto user)
+        public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto user)
         {
 
             if (string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(user.Password) || string.IsNullOrEmpty(user.Name))
