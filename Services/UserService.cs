@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+
 using Microsoft.IdentityModel.Tokens;
 using MinimalChatAppApi.Interfaces;
 using MinimalChatAppApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using MinimalChatAppApi.Exceptions;
 
 namespace MinimalChatAppApi.Services
 {
@@ -83,8 +86,7 @@ namespace MinimalChatAppApi.Services
             if (await GetUserByEmailAsync(user.Email) != null)
             {
 
-                await Console.Out.WriteLineAsync("User already exists");
-                // return new ConflictResult("Email is already registered");
+                throw new ConflictException("Email is already registered");
             }   
             
             var newUser = new User
