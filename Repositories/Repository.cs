@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MinimalChatAppApi.Data;
 using MinimalChatAppApi.Interfaces;
+using MinimalChatAppApi.Models;
+using System.Linq.Expressions;
 
 namespace MinimalChatAppApi.Repositories
 {
@@ -20,9 +22,16 @@ namespace MinimalChatAppApi.Repositories
             return await _dbSet.FindAsync(id);
         }
 
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>> filter = null)
         {
-            return await _dbSet.ToListAsync();
+            if (filter != null)
+            {
+                return await _dbSet.Where(filter).ToListAsync();
+            }
+            else
+            {
+                return await _dbSet.ToListAsync();
+            }
         }
 
         public async Task AddAsync(T entity)
@@ -42,6 +51,7 @@ namespace MinimalChatAppApi.Repositories
             _dbSet.Remove(entity);
             await _context.SaveChangesAsync();
         }
+
     }
 
 }

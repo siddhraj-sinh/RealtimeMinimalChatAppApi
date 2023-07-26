@@ -57,7 +57,9 @@ namespace MinimalChatAppApi
             builder.Services.AddScoped<IRepository<User>, Repository<User>>();
             builder.Services.AddScoped<IRepository<LogModel>, Repository<LogModel>>();
             builder.Services.AddScoped<IMessageService, MessageService>();
-            builder.Services.AddScoped<ILogService, LogService>(); 
+            builder.Services.AddScoped<ILogService, LogService>();
+            builder.Services.AddScoped<IUserService, UserService>();
+
             builder.Services.AddHttpContextAccessor();
 
             var app = builder.Build();
