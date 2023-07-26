@@ -35,8 +35,8 @@ namespace MinimalChatAppApi.Services
             }
 
             // Get the current user's SenderId from the token
-            var currentUser = _httpContextAccessor.HttpContext.User;
-            var senderId = Convert.ToInt32(currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            // var currentUser = _httpContextAccessor.HttpContext.User;
+            var senderId = GetCurrentUserId();
 
             // Check if the receiver user exists
             var receiverUser = await _userRepository.GetByIdAsync(message.ReceiverId);
