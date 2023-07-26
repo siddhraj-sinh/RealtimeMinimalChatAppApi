@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using MinimalChatAppApi.Interfaces;
+using MinimalChatAppApi.Exceptions;
 
 namespace MinimalChatAppApi.Controllers
 {
@@ -30,6 +31,10 @@ namespace MinimalChatAppApi.Controllers
             {
                 var response = await _userService.RegisterAsync(user);
                 return Ok(response);
+            }
+            catch (ConflictException ex)
+            {
+                return Conflict(ex.Message);
             }
             catch (ArgumentException ex)
             {
