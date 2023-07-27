@@ -14,12 +14,24 @@ namespace MinimalChatAppApi.Data
    
 
         public DbSet<LogModel> Log { get; set; }
-        //protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //    base.OnModelCreating(modelBuilder);
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
 
-        //    //configure table names
-        //    modelBuilder.Entity<LogModel>().ToTable("Logss");
-        //}
+            modelBuilder.Entity<Message>().ToTable("Messages");
+
+            //configure receiver
+            modelBuilder.Entity<Message>()
+                .HasOne(m => m.Receiver)
+                .WithMany()
+                .HasForeignKey(m => m.ReceiverId)
+                .OnDelete(DeleteBehavior.NoAction);
+            //configure sender
+            modelBuilder.Entity<Message>()
+              .HasOne(m => m.Sender)
+              .WithMany()
+              .HasForeignKey(m => m.SenderId)
+              .OnDelete(DeleteBehavior.NoAction);
+        }
     }
 }

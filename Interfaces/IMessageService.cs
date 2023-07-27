@@ -8,6 +8,6 @@ namespace MinimalChatAppApi.Interfaces
         Task<SendMessageResponseDto> SendMessagesAsync(SendMessageDto message);
         Task<IActionResult> EditMessageAsync(int messageId, EditMessageDto messageDto);
         Task<IActionResult> DeleteMessageAsync(int messageId);
-        Task<IActionResult> GetConversationHistoryAsync(int userId, DateTime? before, int count = 20, string sort = "asc");
+        Task<IActionResult> GetConversationHistoryAsync(string userId, DateTime? before, int count = 20, string sort = "asc");
     }
 }

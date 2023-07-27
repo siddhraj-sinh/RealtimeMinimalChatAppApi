@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MinimalChatAppApi.Models
@@ -7,19 +8,23 @@ namespace MinimalChatAppApi.Models
     {
         [Key]
         public int Id { get; set; }
+
         [ForeignKey("Sender")]
         [Required]
-        public int SenderId { get; set; }
+        public string SenderId { get; set; }
+
         [ForeignKey("Receiver")]
         [Required]
-        public int ReceiverId { get; set; }
+        public string ReceiverId { get; set; }
+
         [Required]
         public string MessageContent { get; set; }
+
         public DateTime Timestamp { get; set; }
 
         // Navigation properties
-        public User Sender { get; set; }
-        public User Receiver { get; set; }
+        public IdentityUser Sender { get; set; }
+        public IdentityUser Receiver { get; set; }
     }
 
 }
