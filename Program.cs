@@ -8,6 +8,7 @@ using MinimalChatAppApi.Middlewares;
 using MinimalChatAppApi.Models;
 using MinimalChatAppApi.Repositories;
 using MinimalChatAppApi.Services;
+using System.Configuration;
 using System.Text;
 
 namespace MinimalChatAppApi
@@ -59,6 +60,15 @@ namespace MinimalChatAppApi
                     ValidIssuer = "JWTAuthenticationServer",
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Token"]))
                 };
+            });
+
+            builder.Services.AddAuthentication().AddGoogle("Google", options =>
+            {
+                var googleAuth = builder.Configuration.GetSection("Authentication:Google");
+                options.ClientId= googleAuth["ClientId"];
+                options.ClientSecret = googleAuth["ClientSecret"];
+                options.SignInScheme = IdentityConstants.ExternalScheme;
+
             });
 
             builder.Services.AddScoped<IRepository<Message>, Repository<Message>>();

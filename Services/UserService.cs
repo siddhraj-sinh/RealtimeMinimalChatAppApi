@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Google;
 
 namespace MinimalChatAppApi.Services
 {
@@ -17,10 +18,12 @@ namespace MinimalChatAppApi.Services
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public UserService(UserManager<IdentityUser> userManager, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
+        private readonly SignInManager<IdentityUser> _signInManager;
+        public UserService(UserManager<IdentityUser> userManager, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, SignInManager<IdentityUser> signInManager)
         {
             _userManager= userManager;
             _configuration = configuration;
+            _signInManager = signInManager;
             _httpContextAccessor = httpContextAccessor;
         }
        
@@ -141,6 +144,47 @@ namespace MinimalChatAppApi.Services
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+
+        public string GetGoogleAuthenticationUrl()
+        {
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(GoogleDefaults.AuthenticationScheme, "/api/signin-google-callback");
+            return properties.RedirectUri;
+        }
+
+        public async Task<bool> GoogleSignIn(ClaimsPrincipal externalUser)
+        {
+            var externalLoginInfo = await _signInManager.GetExternalLoginInfoAsync();
+            if (externalLoginInfo == null)
+            {
+                return false;
+            }
+
+            // You can access the user's information from the externalUser.Claims
+
+            // Use the information to find or create a user in your application
+            // For example:
+            var user = await _userManager.FindByLoginAsync(externalLoginInfo.LoginProvider, externalLoginInfo.ProviderKey);
+            if (user == null)
+            {
+                // Create a new user in your application if it doesn't exist
+                // For example:
+                user = new IdentityUser
+                {
+                    UserName = externalUser.FindFirst(ClaimTypes.Email)?.Value,
+                    Email = externalUser.FindFirst(ClaimTypes.Email)?.Value
+                };
+                await _userManager.CreateAsync(user);
+
+                // Add the external login information to the user
+                await _userManager.AddLoginAsync(user, externalLoginInfo);
+            }
+
+            // Sign in the user using the external login
+            await _signInManager.SignInAsync(user, isPersistent: false);
+
+            return true;
         }
     }
 }
