@@ -1,43 +1,108 @@
-﻿using System;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.AspNetCore.Identity;
+using MinimalChatAppApi.Exceptions;
 using MinimalChatAppApi.Interfaces;
 using MinimalChatAppApi.Models;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
-using MinimalChatAppApi.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace MinimalChatAppApi.Services
 {
     public class UserService : IUserService
     {
-        private readonly IRepository<User> _userRepository;
+
+
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public UserService(IRepository<User> userRepository, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
+        public UserService(UserManager<IdentityUser> userManager, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
-            _userRepository = userRepository;
+            _userManager= userManager;
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
         }
+       
 
+        public async Task<LoginResponseDto> LoginAsync(LoginRequestDto loginDto)
+        {
+            var user = await _userManager.FindByEmailAsync(loginDto.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, loginDto.Password))
+            {
+                throw new UnauthorizedAccessException("Login failed due to incorrect credentials");
+            }
 
+            // Generate JWT token upon successful login (same as before)
+            var token = GenerateJwtToken(user);
+
+            var response = new LoginResponseDto
+            {
+                Token = token,
+                Profile = new UserProfileDto
+                {
+                    UserId = user.Id,
+                    Name = user.UserName,
+                    Email = user.Email
+                }
+            };
+
+            return response;
+        }
+
+        public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto model)
+        {
+            if (string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password) || string.IsNullOrEmpty(model.Name))
+            {
+                throw new ArgumentException("Registration failed due to validation errors");
+            }
+
+            var userExists = await _userManager.FindByEmailAsync(model.Email);
+            if (userExists != null)
+            {
+                throw new ConflictException("Email is already registered");
+            }
+
+            // Create a new user
+            var user = new IdentityUser
+            {
+                Email = model.Email,
+                UserName = model.Name,
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+            if (!result.Succeeded)
+            {
+                throw new Exception("User registration failed");
+            }
+
+            // Create and return the response DTO
+            var response = new RegisterResponseDto
+            {
+                UserId = user.Id,
+                Name = user.UserName,
+                Email = user.Email
+            };
+
+            return response;
+        }
         public async Task<IEnumerable<UserProfileDto>> GetUsersAsync()
         {
             var currentUserId = GetCurrentUserId();
+            await Console.Out.WriteLineAsync("Current"+currentUserId);
+            // Get all users from UserManager<IdentityUser>
+            var allUsers = await _userManager.Users.ToListAsync();
 
-            var users = await _userRepository.GetAllAsync(u => u.Id != currentUserId);
+            // Filter out the current user from the list of all users
+            var otherUsers = allUsers.Where(u => u.Id != currentUserId);
 
             var responseDto = new List<UserProfileDto>();
-            foreach (var user in users)
+            foreach (var user in otherUsers)
             {
                 responseDto.Add(new UserProfileDto
                 {
                     UserId = user.Id,
-                    Name = user.Name,
+                    Name = user.UserName,
                     Email = user.Email
                 });
             }
@@ -45,91 +110,20 @@ namespace MinimalChatAppApi.Services
             return responseDto;
         }
 
-        public async Task<LoginResponseDto> LoginAsync(LoginRequestDto loginDto)
+        private string GetCurrentUserId()
         {
-            if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
-            {
-                throw new ArgumentException("Login failed due to validation errors");
-            }
-
-
-            var user = await GetUserByEmailAsync(loginDto.Email);
-            if (user == null || !DecodePassword(loginDto.Password, user.Password))
-            {
-                throw new UnauthorizedAccessException("Login failed due to incorrect credentials");
-            }
-
-            var token = GenerateJwtToken(user);
-
-            var responseDto = new LoginResponseDto
-            {
-                Token = token,
-                Profile = new UserProfileDto
-                {
-                    UserId = user.Id,
-                    Name = user.Name,
-                    Email = user.Email
-                }
-            };
-
-            return responseDto;
-        }
-
-        public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto user)
-        {
-
-            if (string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(user.Password) || string.IsNullOrEmpty(user.Name))
-            {
-                throw new ArgumentException("Registration failed due to validation errors");
-            }
-        
-            if (await GetUserByEmailAsync(user.Email) != null)
-            {
-
-                throw new ConflictException("Email is already registered");
-            }   
-            
-            var newUser = new User
-            {
-                Name = user.Name,
-                Email = user.Email,
-                Password = EncodePassword(user.Password)
-            };
-
-            await _userRepository.AddAsync(newUser);
-
-            var responseDto = new RegisterResponseDto
-            {
-                UserId = newUser.Id,
-                Name = newUser.Name,
-                Email = newUser.Email
-            };
-
-            return responseDto;
-        }
-        private int GetCurrentUserId()
-        {
-            var currentUser = _httpContextAccessor.HttpContext.User;
-            var currentUserId = Convert.ToInt32(currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var currentUser = _httpContextAccessor.HttpContext.User.Identity as ClaimsIdentity;
+            var currentUserId = currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return currentUserId;
         }
-        private string EncodePassword(string password)
-        {
-            string salt = BCrypt.Net.BCrypt.GenerateSalt();
-            string hash = BCrypt.Net.BCrypt.HashPassword(password, salt);
-            return hash;
-        }
-        private bool DecodePassword(string password, string hashPassword)
-        {
-            return BCrypt.Net.BCrypt.Verify(password, hashPassword);
-        }
+
         // Helper method to generate a JWT token
-        private string GenerateJwtToken(User user)
+        private string GenerateJwtToken(IdentityUser user)
         {
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Name),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName),
                 new Claim(ClaimTypes.Email, user.Email)
             };
             // string _jwtSecret = _configuration.GetSection("AppSettings:Token").Value;
@@ -147,11 +141,6 @@ namespace MinimalChatAppApi.Services
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-        public async Task<User> GetUserByEmailAsync(string email)
-        {
-            var user = await _userRepository.GetAllAsync(u => u.Email == email);
-            return user.FirstOrDefault();
         }
     }
 }

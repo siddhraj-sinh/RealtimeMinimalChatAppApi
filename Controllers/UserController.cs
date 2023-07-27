@@ -1,15 +1,16 @@
-﻿
+﻿using Azure;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MinimalChatAppApi.Data;
-using MinimalChatAppApi.Models;
 using Microsoft.IdentityModel.Tokens;
+using MinimalChatAppApi.Data;
+using MinimalChatAppApi.Exceptions;
+using MinimalChatAppApi.Interfaces;
+using MinimalChatAppApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.AspNetCore.Authorization;
-using MinimalChatAppApi.Interfaces;
-using MinimalChatAppApi.Exceptions;
 
 namespace MinimalChatAppApi.Controllers
 {
@@ -18,18 +19,17 @@ namespace MinimalChatAppApi.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-
         public UserController(IUserService userService)
         {
-            _userService = userService;
+           _userService=userService;
         }
 
-
         [HttpPost("/api/register")]
-        public async Task<ActionResult<RegisterResponseDto>> Register(RegisterRequestDto user) {
+        public async Task<ActionResult<RegisterResponseDto>> Register(RegisterRequestDto model)
+        {
             try
             {
-                var response = await _userService.RegisterAsync(user);
+                var response = await _userService.RegisterAsync(model);
                 return Ok(response);
             }
             catch (ConflictException ex)
@@ -45,14 +45,14 @@ namespace MinimalChatAppApi.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
             }
 
+
         }
 
-
-       
 
         [HttpPost("/api/login")]
         public async Task<ActionResult<LoginResponseDto>> Login(LoginRequestDto loginDto)
         {
+
             try
             {
                 var response = await _userService.LoginAsync(loginDto);
@@ -72,10 +72,10 @@ namespace MinimalChatAppApi.Controllers
             }
         }
 
-
         [Authorize]
         [HttpGet("/api/users")]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers() {
+        public async Task<ActionResult<IEnumerable<IdentityUser>>> GetUsers()
+        {
             try
             {
                 var users = await _userService.GetUsersAsync();
@@ -86,6 +86,6 @@ namespace MinimalChatAppApi.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
             }
         }
- 
+
+        }
     }
-}

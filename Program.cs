@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MinimalChatAppApi.Data;
@@ -39,7 +40,14 @@ namespace MinimalChatAppApi
             builder.Services.AddDbContext<ChatContext>(options =>
   options.UseSqlServer(builder.Configuration.GetConnectionString("ChatContext")));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<ChatContext>().AddDefaultTokenProviders();
+            
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
             {
                 options.RequireHttpsMetadata = false;
                 options.SaveToken = true;
@@ -53,10 +61,10 @@ namespace MinimalChatAppApi
                 };
             });
 
-            builder.Services.AddScoped<IRepository<Message>, Repository<Message>>();
-            builder.Services.AddScoped<IRepository<User>, Repository<User>>();
+            //builder.Services.AddScoped<IRepository<Message>, Repository<Message>>();
+            //builder.Services.AddScoped<IRepository<User>, Repository<User>>();
             builder.Services.AddScoped<IRepository<LogModel>, Repository<LogModel>>();
-            builder.Services.AddScoped<IMessageService, MessageService>();
+            //builder.Services.AddScoped<IMessageService, MessageService>();
             builder.Services.AddScoped<ILogService, LogService>();
             builder.Services.AddScoped<IUserService, UserService>();
 
